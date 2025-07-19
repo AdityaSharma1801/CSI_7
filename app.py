@@ -1,49 +1,51 @@
+# app.py
+from utils import plot_feature_importance, show_user_input, display_prediction
 import streamlit as st
 import pandas as pd
 import numpy as np
-from sklearn.linear_model import LinearRegression
-import joblib
-import matplotlib.pyplot as plt
-import seaborn as sns
-import os
+import pickle
 
-# -------- TRAIN THE MODEL AUTOMATICALLY (if not already saved) --------
-MODEL_FILE = "model.pkl"
+# Load model
+with open("model.pkl", "rb") as file:
+    model = pickle.load(file)
 
-if not os.path.exists(MODEL_FILE):
+st.title("Diabetes Prediction App")
+
+st.sidebar.header("Input Patient Details")
+
+def user_input():
+    Pregnancies = st.sidebar.slider('Pregnancies', 0, 20, 1)
+    Glucose = st.sidebar.slider('Glucose', 40, 200, 100)
+    BloodPressure = st.sidebar.slider('Blood Pressure', 30, 130, 70)
+    SkinThickness = st.sidebar.slider('Skin Thickness', 0, 100, 20)
+    Insulin = st.sidebar.slider('Insulin', 0, 846, 79)
+    BMI = st.sidebar.slider('BMI', 10.0, 70.0, 25.0)
+    DiabetesPedigreeFunction = st.sidebar.slider('Diabetes Pedigree Function', 0.0, 2.5, 0.5)
+    Age = st.sidebar.slider('Age', 10, 100, 33)
+
     data = {
-        "Hours_Studied": [1, 2, 3, 4, 5, 6, 7, 8, 9],
-        "Scores": [20, 30, 35, 40, 50, 60, 65, 78, 85]
+        'Pregnancies': Pregnancies,
+        'Glucose': Glucose,
+        'BloodPressure': BloodPressure,
+        'SkinThickness': SkinThickness,
+        'Insulin': Insulin,
+        'BMI': BMI,
+        'DiabetesPedigreeFunction': DiabetesPedigreeFunction,
+        'Age': Age
     }
-    df = pd.DataFrame(data)
-    X = df[["Hours_Studied"]]
-    y = df["Scores"]
-    model = LinearRegression()
-    model.fit(X, y)
-    joblib.dump(model, MODEL_FILE)
+    return pd.DataFrame(data, index=[0])
 
-# -------- LOAD MODEL --------
-model = joblib.load(MODEL_FILE)
+input_df = user_input()
 
-# -------- STREAMLIT UI --------
-st.title("📊 Student Score Prediction App")
-st.write("Predict your exam score based on study hours.")
+# Show user input
+show_user_input(input_df)
 
-hours = st.slider("Select Hours of Study", min_value=1.0, max_value=10.0, step=0.5)
 
-if st.button("Predict Score"):
-    predicted_score = model.predict([[hours]])[0]
-    st.success(f"🎯 Predicted Score: **{predicted_score:.2f}**")
+# Prediction
+prediction = model.predict(input_df)[0]
+prediction_proba = model.predict_proba(input_df)
 
-    # Visualization
-    st.subheader("Score Trend Visualization")
-    hours_range = np.arange(1, 10, 0.5).reshape(-1, 1)
-    scores_pred = model.predict(hours_range)
+display_prediction(prediction, prediction_proba)
 
-    fig, ax = plt.subplots()
-    sns.lineplot(x=hours_range.flatten(), y=scores_pred, ax=ax, color="blue", label="Predicted Trend")
-    ax.scatter(hours, predicted_score, color="red", s=100, label="Your Prediction")
-    ax.set_xlabel("Hours Studied")
-    ax.set_ylabel("Predicted Score")
-    ax.legend()
-    st.pyplot(fig)
+# Feature importance
+plot_feature_importance(model, input_df.columns)
