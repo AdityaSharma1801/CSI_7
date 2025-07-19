@@ -1,21 +1,21 @@
 import pandas as pd
-import numpy as np
-from sklearn.linear_model import LinearRegression
-import joblib
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+import pickle
 
-# Sample dataset
-data = {
-    "Hours_Studied": [1, 2, 3, 4, 5, 6, 7, 8, 9],
-    "Scores": [20, 30, 35, 40, 50, 60, 65, 78, 85]
-}
-df = pd.DataFrame(data)
+# Load dataset
+df = pd.read_csv('https://raw.githubusercontent.com/jbrownlee/Datasets/master/pima-indians-diabetes.data.csv')
+df.columns = ['Pregnancies', 'Glucose', 'BloodPressure', 'SkinThickness', 
+              'Insulin', 'BMI', 'DiabetesPedigreeFunction', 'Age', 'Outcome']
 
-# Train model
-X = df[["Hours_Studied"]]
-y = df["Scores"]
-model = LinearRegression()
-model.fit(X, y)
+X = df.drop('Outcome', axis=1)
+y = df['Outcome']
 
-# Save model
-joblib.dump(model, "model.pkl")
-print("✅ Model trained and saved as model.pkl")
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+
+model = LogisticRegression(max_iter=1000)
+model.fit(X_train, y_train)
+
+# Save model to model.pkl
+with open('model.pkl', 'wb') as f:
+    pickle.dump(model, f)
